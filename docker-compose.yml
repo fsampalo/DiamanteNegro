@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/gym_tracker
+      - SECRET_KEY=dev-secret-key-change-in-production
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    command: python app.py
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=gym_tracker
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

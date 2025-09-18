@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Bienvenido - Gym Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card mt-5">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-dumbbell fa-4x text-primary"></i>
+                </div>
+                <h1 class="card-title mb-4">Gym Tracker</h1>
+                <p class="card-text lead mb-4">
+                    Trackea tu progreso en el gimnasio de manera sencilla y efectiva.
+                    Registra tus ejercicios, pesos y repeticiones para visualizar tu evolución.
+                </p>
+                
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Registrarse
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line fa-2x text-primary mb-3"></i>
+                        <h5>Progreso</h5>
+                        <p class="small">Visualiza tu evolución con gráficas detalladas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-clipboard-list fa-2x text-primary mb-3"></i>
+                        <h5>Registro</h5>
+                        <p class="small">Registra ejercicios, pesos y repeticiones fácilmente</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-mobile-alt fa-2x text-primary mb-3"></i>
+                        <h5>Accesible</h5>
+                        <p class="small">Accede desde cualquier dispositivo móvil</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1049 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gym Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-plus-circle me-2"></i>Registrar Ejercicio</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('registrar_ejercicio') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ejercicio_id" class="form-label">
+                                <i class="fas fa-dumbbell me-1"></i>Ejercicio
+                            </label>
+                            <select class="form-control" id="ejercicio_id" name="ejercicio_id" required>
+                                <option value="">Selecciona un ejercicio</option>
+                                {% for ejercicio in ejercicios %}
+                                <option value="{{ ejercicio.id }}">{{ ejercicio.nombre }} ({{ ejercicio.grupo_muscular }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha" class="form-label">
+                                <i class="fas fa-calendar me-1"></i>Fecha del Ejercicio
+                            </label>
+                            <input type="date" class="form-control" id="fecha" name="fecha" value="{{ today }}" required>
+                            <div class="form-text">Por defecto es hoy</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-list-ol me-1"></i>Número de Series
+                            </label>
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="cambiarNumeroSeries(-1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span id="numero-series-display" class="mx-3 fw-bold fs-5">3</span>
+                                <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="cambiarNumeroSeries(1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Ajusta el número de series a realizar</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenedor dinámico para las series -->
+                    <div id="series-container" class="mb-3">
+                        <h6 class="border-bottom pb-2 mb-3 text-primary">
+                            <i class="fas fa-dumbbell me-2"></i>Series del Ejercicio
+                        </h6>
+                        <!-- Las series se generarán dinámicamente aquí -->
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notas" class="form-label">
+                            <i class="fas fa-sticky-note me-1"></i>Notas (opcional)
+                        </label>
+                        <textarea class="form-control" id="notas" name="notas" rows="2" placeholder="Sensaciones, dificultades, etc."></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Registrar Ejercicio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history me-2"></i>Últimos Registros</h5>
+            </div>
+            <div class="card-body">
+                {% if ultimos_registros %}
+                    {% for registro in ultimos_registros %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <strong class="text-primary">{{ registro.ejercicio.nombre }}</strong>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>{{ registro.fecha.strftime('%d/%m') }}
+                            </small>
+                        </div>
+                        
+                        {% if registro.series %}
+                            <div class="mt-2">
+                                {% for serie in registro.series %}
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted">
+                                        <span class="badge bg-secondary me-1">{{ serie.numero_serie }}</span>
+                                        {{ serie.peso }}kg × {{ serie.repeticiones }}
+                                        {% if not serie.completada %}
+                                        <i class="fas fa-times text-danger ms-1" title="No completada"></i>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endfor %}
+                                
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-list-ol me-1"></i>{{ registro.series|length }} series
+                                    <i class="fas fa-clock ms-2 me-1"></i>{{ registro.fecha_registro.strftime('%H:%M') }}
+                                </small>
+                            </div>
+                        {% endif %}
+                        
+                        {% if registro.notas %}
+                        <small class="text-info d-block mt-1">
+                            <i class="fas fa-sticky-note me-1"></i>{{ registro.notas }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-dumbbell fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">
+                            Aún no has registrado ejercicios
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-weight me-2"></i>Peso Corporal</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('registrar_peso') }}" class="mb-3">
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <label class="form-label small">Peso (kg)</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   name="peso" step="0.1" min="30" max="200" required>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small">Fecha</label>
+                            <input type="date" class="form-control form-control-sm" 
+                                   name="fecha_peso" value="{{ today }}">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Notas (opcional)</label>
+                        <input type="text" class="form-control form-control-sm" 
+                               name="notas_peso" placeholder="Ej: En ayunas, después de entrenar...">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-save me-1"></i>Registrar Peso
+                    </button>
+                </form>
+                
+                <button class="btn btn-outline-info btn-sm w-100" onclick="abrirGraficaPeso()">
+                    <i class="fas fa-chart-line me-1"></i>Ver Evolución
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Ejercicios Disponibles</h5>
+                <button class="btn btn-success btn-sm" onclick="abrirModalNuevoEjercicio()">
+                    <i class="fas fa-plus me-1"></i>Nuevo Ejercicio
+                </button>
+            </div>
+            <div class="card-body">
+                {% for grupo in grupos_ordenados %}
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3 text-primary">
+                        {% if grupo == 'Pecho' %}
+                            <i class="fas fa-heartbeat me-2"></i>
+                        {% elif grupo == 'Espalda' %}
+                            <i class="fas fa-user-shield me-2"></i>
+                        {% elif grupo in ['Brazos', 'Triceps', 'Biceps'] %}
+                            <i class="fas fa-hand-rock me-2"></i>
+                        {% elif grupo == 'Piernas' %}
+                            <i class="fas fa-running me-2"></i>
+                        {% elif grupo == 'Hombros' %}
+                            <i class="fas fa-user me-2"></i>
+                        {% else %}
+                            <i class="fas fa-dumbbell me-2"></i>
+                        {% endif %}
+                        {{ grupo }}
+                        <span class="badge bg-primary ms-2">{{ ejercicios_agrupados[grupo]|length }} ejercicios</span>
+                    </h6>
+                    <div class="row">
+                        {% for ejercicio in ejercicios_agrupados[grupo] %}
+                        <div class="col-md-6 col-lg-4 col-xl-3 mb-3">
+                            <div class="card border-0 shadow-sm h-100 ejercicio-card">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title text-primary mb-0 flex-grow-1">
+                                            <i class="fas fa-dumbbell me-1 text-muted"></i>
+                                            {{ ejercicio.nombre }}
+                                        </h6>
+                                        {% if ejercicio.usuario_id %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm p-0 text-muted" type="button" 
+                                                    data-bs-toggle="dropdown" title="Ejercicio personalizado">
+                                                <i class="fas fa-user-edit"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <button class="dropdown-item text-danger" 
+                                                            onclick="eliminarEjercicio({{ ejercicio.id }}, '{{ ejercicio.nombre }}')">
+                                                        <i class="fas fa-trash me-1"></i>Eliminar
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        {% else %}
+                                        <small class="badge bg-light text-muted">Sistema</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if ejercicio.descripcion %}
+                                    <p class="card-text small text-muted mb-2">{{ ejercicio.descripcion }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex gap-1 mt-2">
+                                        <button class="btn btn-outline-primary btn-sm flex-fill" 
+                                                onclick="seleccionarEjercicio({{ ejercicio.id }}, '{{ ejercicio.nombre }}')"
+                                                title="Seleccionar para registrar">
+                                            <i class="fas fa-plus me-1"></i>Usar
+                                        </button>
+                                        <button class="btn btn-outline-info btn-sm" 
+                                                onclick="verProgresoEjercicio({{ ejercicio.id }}, '{{ ejercicio.nombre }}')"
+                                                title="Ver progreso">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para gráfica de peso -->
+<div class="modal fade" id="modalGraficaPeso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>Evolución del Peso Corporal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros de tiempo -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">Período a mostrar:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="periodo" id="periodo7" value="7">
+                            <label class="btn btn-outline-primary" for="periodo7">7 días</label>
+                            
+                            <input type="radio" class="btn-check" name="periodo" id="periodo30" value="30" checked>
+                            <label class="btn btn-outline-primary" for="periodo30">30 días</label>
+                            
+                            <input type="radio" class="btn-check" name="periodo" id="periodo90" value="90">
+                            <label class="btn btn-outline-primary" for="periodo90">3 meses</label>
+                            
+                            <input type="radio" class="btn-check" name="periodo" id="periodo365" value="365">
+                            <label class="btn btn-outline-primary" for="periodo365">1 año</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas rápidas -->
+                <div class="row mb-3" id="estadisticas-peso">
+                    <div class="col-4 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Peso Actual</div>
+                                <div class="fw-bold" id="peso-actual">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Peso Inicial</div>
+                                <div class="fw-bold" id="peso-inicial">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Diferencia</div>
+                                <div class="fw-bold" id="diferencia-peso">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contenedor de la gráfica -->
+                <div class="chart-container" style="position: relative; height: 400px;">
+                    <canvas id="graficaPeso"></canvas>
+                </div>
+                
+                <div id="loading-peso" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando datos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para gráfica de progreso de ejercicios -->
+<div class="modal fade" id="modalProgresoEjercicio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>Progreso: <span id="nombre-ejercicio-modal">--</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtros de tiempo -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">Período a mostrar:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="periodo-ejercicio" id="periodo-ejercicio-30" value="30">
+                            <label class="btn btn-outline-success" for="periodo-ejercicio-30">30 días</label>
+                            
+                            <input type="radio" class="btn-check" name="periodo-ejercicio" id="periodo-ejercicio-90" value="90" checked>
+                            <label class="btn btn-outline-success" for="periodo-ejercicio-90">3 meses</label>
+                            
+                            <input type="radio" class="btn-check" name="periodo-ejercicio" id="periodo-ejercicio-180" value="180">
+                            <label class="btn btn-outline-success" for="periodo-ejercicio-180">6 meses</label>
+                            
+                            <input type="radio" class="btn-check" name="periodo-ejercicio" id="periodo-ejercicio-365" value="365">
+                            <label class="btn btn-outline-success" for="periodo-ejercicio-365">1 año</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas del ejercicio -->
+                <div class="row mb-4" id="estadisticas-ejercicio">
+                    <div class="col-md-2 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Peso Actual</div>
+                                <div class="fw-bold text-success" id="ejercicio-peso-actual">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Peso Inicial</div>
+                                <div class="fw-bold" id="ejercicio-peso-inicial">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Peso Máximo</div>
+                                <div class="fw-bold text-primary" id="ejercicio-peso-maximo">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Progreso</div>
+                                <div class="fw-bold" id="ejercicio-diferencia">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Sesiones</div>
+                                <div class="fw-bold text-info" id="ejercicio-sesiones">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <div class="small text-muted">Volumen Prom.</div>
+                                <div class="fw-bold text-warning" id="ejercicio-volumen">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contenedor de las gráficas -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-weight-hanging me-2"></i>Evolución del Peso (Primera Serie)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height: 300px;">
+                                    <canvas id="graficaProgresoEjercicio"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-bar me-2"></i>Volumen Total por Sesión
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height: 300px;">
+                                    <canvas id="graficaVolumenEjercicio"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="loading-ejercicio" class="text-center py-4">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando datos del ejercicio...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar nuevo ejercicio -->
+<div class="modal fade" id="modalNuevoEjercicio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Crear Nuevo Ejercicio
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('agregar_ejercicio') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre_ejercicio" class="form-label">
+                            <i class="fas fa-dumbbell me-1"></i>Nombre del Ejercicio
+                        </label>
+                        <input type="text" class="form-control" id="nombre_ejercicio" 
+                               name="nombre_ejercicio" required
+                               placeholder="Ej: Press de Banca con Mancuernas">
+                        <div class="form-text">Nombre único para identificar el ejercicio</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="grupo_muscular_ejercicio" class="form-label">
+                            <i class="fas fa-users me-1"></i>Grupo Muscular
+                        </label>
+                        <select class="form-control" id="grupo_muscular_ejercicio" 
+                                name="grupo_muscular_ejercicio" required>
+                            <option value="">Selecciona un grupo muscular</option>
+                            <option value="Pecho">Pecho</option>
+                            <option value="Espalda">Espalda</option>
+                            <option value="Piernas">Piernas</option>
+                            <option value="Hombros">Hombros</option>
+                            <option value="Brazos">Brazos</option>
+                            <option value="Triceps">Triceps</option>
+                            <option value="Biceps">Biceps</option>
+                            <option value="Core">Core</option>
+                            <option value="Cardio">Cardio</option>
+                            <option value="Funcional">Funcional</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="descripcion_ejercicio" class="form-label">
+                            <i class="fas fa-info-circle me-1"></i>Descripción (opcional)
+                        </label>
+                        <textarea class="form-control" id="descripcion_ejercicio" 
+                                  name="descripcion_ejercicio" rows="3"
+                                  placeholder="Describe cómo se realiza el ejercicio, equipamiento necesario, etc."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Tip:</strong> Este ejercicio será privado para tu cuenta. Solo tú podrás verlo y usarlo.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>Crear Ejercicio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let numeroSeries = 3;
+let graficaPeso = null;
+let graficaProgresoEjercicio = null;
+let graficaVolumenEjercicio = null;
+let ejercicioActualId = null;
+
+// Inicializar las series al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    generarSeries();
+});
+
+function cambiarNumeroSeries(cambio) {
+    numeroSeries = Math.max(1, Math.min(10, numeroSeries + cambio)); // Límite entre 1 y 10 series
+    document.getElementById('numero-series-display').textContent = numeroSeries;
+    generarSeries();
+}
+
+function generarSeries() {
+    const container = document.getElementById('series-container');
+    const titulo = container.querySelector('h6');
+    
+    // Limpiar contenido anterior (excepto el título)
+    container.innerHTML = '';
+    container.appendChild(titulo);
+    
+    // Crear el contenedor de series
+    const seriesDiv = document.createElement('div');
+    seriesDiv.className = 'row';
+    
+    for (let i = 1; i <= numeroSeries; i++) {
+        seriesDiv.innerHTML += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white py-2">
+                        <h6 class="mb-0">
+                            <i class="fas fa-play me-1"></i>Serie ${i}
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <label class="form-label small">Peso (kg)</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="peso_${i}" step="0.5" min="0" required>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <label class="form-label small">Reps</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       id="reps_${i}" min="1" required>
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="completada_${i}" checked>
+                            <label class="form-check-label small" for="completada_${i}">
+                                Completada
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.appendChild(seriesDiv);
+}
+
+function seleccionarEjercicio(ejercicioId, nombreEjercicio) {
+    // Seleccionar el ejercicio en el formulario
+    document.getElementById('ejercicio_id').value = ejercicioId;
+    
+    // Scroll suave hacia el formulario
+    document.querySelector('.card').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+    });
+    
+    // Destacar temporalmente la selección
+    const select = document.getElementById('ejercicio_id');
+    select.style.borderColor = '#667eea';
+    select.style.boxShadow = '0 0 0 0.2rem rgba(102, 126, 234, 0.25)';
+    
+    // Remover el destacado después de 2 segundos
+    setTimeout(() => {
+        select.style.borderColor = '';
+        select.style.boxShadow = '';
+    }, 2000);
+    
+    // Mostrar notificación
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.style.maxWidth = '300px';
+    toast.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>${nombreEjercicio}</strong> seleccionado
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remover la notificación después de 3 segundos
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+// Interceptar el envío del formulario para recopilar datos de series
+document.querySelector('form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Recopilar datos de todas las series
+    const seriesData = [];
+    for (let i = 1; i <= numeroSeries; i++) {
+        const peso = document.getElementById(`peso_${i}`).value;
+        const reps = document.getElementById(`reps_${i}`).value;
+        const completada = document.getElementById(`completada_${i}`).checked;
+        
+        if (peso && reps) {
+            seriesData.push(JSON.stringify({
+                peso: peso,
+                repeticiones: reps,
+                completada: completada
+            }));
+        }
+    }
+    
+    // Agregar los datos de series como campos ocultos
+    seriesData.forEach((data, index) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'series_data';
+        input.value = data;
+        this.appendChild(input);
+    });
+    
+    // Enviar el formulario
+    this.submit();
+});
+
+// Funciones para gráfica de peso
+function abrirGraficaPeso() {
+    const modal = new bootstrap.Modal(document.getElementById('modalGraficaPeso'));
+    modal.show();
+    
+    // Cargar datos cuando se abra el modal
+    cargarDatosPeso(30); // Por defecto 30 días
+}
+
+function cargarDatosPeso(dias) {
+    // Mostrar loading
+    document.getElementById('loading-peso').style.display = 'block';
+    document.querySelector('.chart-container').style.display = 'none';
+    document.getElementById('estadisticas-peso').style.display = 'none';
+    
+    fetch(`{{ url_for('peso_data') }}?dias=${dias}`)
+        .then(response => response.json())
+        .then(data => {
+            // Ocultar loading
+            document.getElementById('loading-peso').style.display = 'none';
+            document.querySelector('.chart-container').style.display = 'block';
+            document.getElementById('estadisticas-peso').style.display = 'flex';
+            
+            // Actualizar estadísticas
+            document.getElementById('peso-actual').textContent = 
+                data.peso_actual ? `${data.peso_actual} kg` : '--';
+            document.getElementById('peso-inicial').textContent = 
+                data.peso_inicial ? `${data.peso_inicial} kg` : '--';
+            
+            const diferencia = data.diferencia;
+            const diferenciaElement = document.getElementById('diferencia-peso');
+            if (diferencia !== 0) {
+                const signo = diferencia > 0 ? '+' : '';
+                diferenciaElement.textContent = `${signo}${diferencia.toFixed(1)} kg`;
+                diferenciaElement.className = `fw-bold ${diferencia > 0 ? 'text-success' : 'text-danger'}`;
+            } else {
+                diferenciaElement.textContent = '--';
+                diferenciaElement.className = 'fw-bold';
+            }
+            
+            // Crear o actualizar la gráfica
+            crearGraficaPeso(data.datos);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loading-peso').innerHTML = 
+                '<p class="text-danger">Error al cargar los datos</p>';
+        });
+}
+
+function crearGraficaPeso(datos) {
+    const ctx = document.getElementById('graficaPeso').getContext('2d');
+    
+    // Destruir gráfica anterior si existe
+    if (graficaPeso) {
+        graficaPeso.destroy();
+    }
+    
+    const labels = datos.map(d => {
+        const fecha = new Date(d.fecha);
+        return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    });
+    
+    const pesos = datos.map(d => d.peso);
+    
+    graficaPeso = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Peso (kg)',
+                data: pesos,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const dataIndex = context.dataIndex;
+                            const registro = datos[dataIndex];
+                            let tooltip = `Peso: ${context.parsed.y} kg`;
+                            if (registro.notas) {
+                                tooltip += `\nNotas: ${registro.notas}`;
+                            }
+                            return tooltip;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' kg';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+// Funciones para gráficas de ejercicios
+function verProgresoEjercicio(ejercicioId, nombreEjercicio) {
+    ejercicioActualId = ejercicioId;
+    document.getElementById('nombre-ejercicio-modal').textContent = nombreEjercicio;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalProgresoEjercicio'));
+    modal.show();
+    
+    // Cargar datos cuando se abra el modal (por defecto 3 meses)
+    cargarDatosEjercicio(ejercicioId, 90);
+}
+
+function cargarDatosEjercicio(ejercicioId, dias) {
+    // Mostrar loading
+    document.getElementById('loading-ejercicio').style.display = 'block';
+    document.querySelector('#modalProgresoEjercicio .row:has(.card)').style.display = 'none';
+    document.getElementById('estadisticas-ejercicio').style.display = 'none';
+    
+    fetch(`{{ url_for('progreso_ejercicio', ejercicio_id=0) }}`.replace('0', ejercicioId) + `?dias=${dias}`)
+        .then(response => response.json())
+        .then(data => {
+            // Ocultar loading
+            document.getElementById('loading-ejercicio').style.display = 'none';
+            document.querySelector('#modalProgresoEjercicio .row:has(.card)').style.display = 'flex';
+            document.getElementById('estadisticas-ejercicio').style.display = 'flex';
+            
+            // Actualizar estadísticas
+            const stats = data.estadisticas;
+            document.getElementById('ejercicio-peso-actual').textContent = 
+                stats.peso_actual ? `${stats.peso_actual} kg` : '--';
+            document.getElementById('ejercicio-peso-inicial').textContent = 
+                stats.peso_inicial ? `${stats.peso_inicial} kg` : '--';
+            document.getElementById('ejercicio-peso-maximo').textContent = 
+                stats.peso_maximo ? `${stats.peso_maximo} kg` : '--';
+            document.getElementById('ejercicio-sesiones').textContent = 
+                stats.total_sesiones || '--';
+            document.getElementById('ejercicio-volumen').textContent = 
+                stats.volumen_promedio ? `${Math.round(stats.volumen_promedio)} kg` : '--';
+            
+            // Actualizar diferencia con color
+            const diferencia = stats.diferencia;
+            const diferenciaElement = document.getElementById('ejercicio-diferencia');
+            if (diferencia !== undefined && diferencia !== 0) {
+                const signo = diferencia > 0 ? '+' : '';
+                diferenciaElement.textContent = `${signo}${diferencia.toFixed(1)} kg`;
+                diferenciaElement.className = `fw-bold ${diferencia > 0 ? 'text-success' : 'text-danger'}`;
+            } else {
+                diferenciaElement.textContent = '--';
+                diferenciaElement.className = 'fw-bold';
+            }
+            
+            // Crear gráficas
+            crearGraficasEjercicio(data.datos);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loading-ejercicio').innerHTML = 
+                '<p class="text-danger">Error al cargar los datos del ejercicio</p>';
+        });
+}
+
+function crearGraficasEjercicio(datos) {
+    // Preparar datos para las gráficas
+    const labels = datos.map(d => {
+        const fecha = new Date(d.fecha);
+        return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    });
+    
+    const pesosPrimera = datos.map(d => d.peso_primera_serie);
+    const volumenTotal = datos.map(d => d.volumen_total);
+    
+    // Gráfica de evolución de peso (primera serie)
+    const ctxPeso = document.getElementById('graficaProgresoEjercicio').getContext('2d');
+    
+    if (graficaProgresoEjercicio) {
+        graficaProgresoEjercicio.destroy();
+    }
+    
+    graficaProgresoEjercicio = new Chart(ctxPeso, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Peso Primera Serie (kg)',
+                data: pesosPrimera,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#28a745',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const dataIndex = context.dataIndex;
+                            const registro = datos[dataIndex];
+                            let tooltip = `Peso: ${context.parsed.y} kg`;
+                            tooltip += `\nReps: ${registro.reps_primera_serie}`;
+                            tooltip += `\nSeries: ${registro.series_total}`;
+                            tooltip += `\nVolumen: ${Math.round(registro.volumen_total)} kg`;
+                            if (registro.notas) {
+                                tooltip += `\nNotas: ${registro.notas}`;
+                            }
+                            return tooltip;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' kg';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Gráfica de volumen total
+    const ctxVolumen = document.getElementById('graficaVolumenEjercicio').getContext('2d');
+    
+    if (graficaVolumenEjercicio) {
+        graficaVolumenEjercicio.destroy();
+    }
+    
+    graficaVolumenEjercicio = new Chart(ctxVolumen, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Volumen Total (kg)',
+                data: volumenTotal,
+                backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                borderColor: '#ffc107',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Volumen: ${Math.round(context.parsed.y)} kg`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return Math.round(value) + ' kg';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Manejar cambios en los filtros de período (peso corporal)
+document.addEventListener('DOMContentLoaded', function() {
+    const periodos = document.querySelectorAll('input[name="periodo"]');
+    periodos.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                cargarDatosPeso(parseInt(this.value));
+            }
+        });
+    });
+    
+    // Manejar cambios en los filtros de período (ejercicios)
+    const periodosEjercicio = document.querySelectorAll('input[name="periodo-ejercicio"]');
+    periodosEjercicio.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked && ejercicioActualId) {
+                cargarDatosEjercicio(ejercicioActualId, parseInt(this.value));
+            }
+        });
+    });
+});
+
+// Funciones para gestión de ejercicios personalizados
+function abrirModalNuevoEjercicio() {
+    const modal = new bootstrap.Modal(document.getElementById('modalNuevoEjercicio'));
+    modal.show();
+    
+    // Limpiar formulario
+    document.getElementById('nombre_ejercicio').value = '';
+    document.getElementById('grupo_muscular_ejercicio').value = '';
+    document.getElementById('descripcion_ejercicio').value = '';
+}
+
+function eliminarEjercicio(ejercicioId, nombreEjercicio) {
+    if (confirm(`¿Estás seguro de que quieres eliminar el ejercicio "${nombreEjercicio}"?\n\nSi tiene historial de entrenamientos, será archivado en lugar de eliminado.`)) {
+        // Crear formulario temporal para enviar DELETE
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('eliminar_ejercicio', ejercicio_id=0) }}`.replace('0', ejercicioId);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
